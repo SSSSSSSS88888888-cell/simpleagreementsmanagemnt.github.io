@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>請求書管理システム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .invoice-list {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .invoice-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .invoice-item:last-child {
+            border-bottom: none;
+        }
+        
+        .invoice-info {
+            flex: 1;
+        }
+        
+        .invoice-company {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .invoice-details {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .invoice-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-paid {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .status-overdue {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .invoice-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        .btn-edit {
+            background: #2196f3;
+        }
+        
+        .btn-delete {
+            background: #f44336;
+        }
+        
+        #p5-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .invoice-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .invoice-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>請求書管理システム</h1>
+            <p>企業向けインボイス管理ツール</p>
+        </div>
+        
+        <div class="stats" id="statsContainer">
+            <!-- 統計情報がここに表示されます -->
+        </div>
+        
+        <div class="controls">
+            <h3>新しい請求書を追加</h3>
+            <form id="invoiceForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="company">会社名</label>
+                        <input type="text" id="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceNumber">請求書番号</label>
+                        <input type="text" id="invoiceNumber" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">金額 (円)</label>
+                        <input type="number" id="amount" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dueDate">支払期限</label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">ステータス</label>
+                        <select id="status" required>
+                            <option value="pending">未払い</option>
+                            <option value="paid">支払済み</option>
+                            <option value="overdue">期限切れ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">備考</label>
+                        <textarea id="description" rows="2"></textarea>
+                    </div>
+                </div>
+                
+                <button type="submit">請求書を追加</button>
+                <button type="button" onclick="clearForm()">フォームをクリア</button>
+                <button type="button" onclick="exportData()">データをエクスポート</button>
+            </form>
+        </div>
+        
+        <div class="invoice-list">
+            <h3>請求書一覧</h3>
+            <div id="invoiceList">
+                <!-- 請求書リストがここに表示されます -->
+            </div>
+        </div>
+        
+        <div id="p5-container">
+            <!-- p5.jsの可視化がここに表示されます -->
+        </div>
+    </div>
+
+    <script>
+        // データ管理
+        let invoices = [];
+        let editingIndex = -1;
+        
+        // p5.js変数
+        let canvas;
+        let chartData = [];
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateDisplay();
+            
+            document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addOrUpdateInvoice();
+            });
+        });
+        
+        // 請求書の追加・更新
+        function addOrUpdateInvoice() {
+            const invoice = {
+                company: document.getElementById('company').value,
+                invoiceNumber: document.getElementById('invoiceNumber').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                dueDate: document.getElementById('dueDate').value,
+                status: document.getElementById('status').value,
+                description: document.getElementById('description').value,
+                createdAt: editingIndex === -1 ? new Date().toISOString() : invoices[editingIndex].createdAt
+            };
+            
+            if (editingIndex === -1) {
+                invoices.push(invoice);
+            } else {
+                invoices[editingIndex] = invoice;
+                editingIndex = -1;
+                document.querySelector('button[type="submit"]').textContent = '請求書を追加';
+            }
+            
+            clearForm();
+            saveData();
+            updateDisplay();
+        }
+        
+        // フォームのクリア
+        function clearForm() {
+            document.getElementById('invoiceForm').reset();
+            editingIndex = -1;
+            document.querySelector('button[type="submit"]').textContent = '請求書を追加';
+        }
+        
+        // 請求書の編集
+        function editInvoice(index) {
+            const invoice = invoices[index];
+            document.getElementById('company').value = invoice.company;
+            document.getElementById('invoiceNumber').value = invoice.invoiceNumber;
+            document.getElementById('amount').value = invoice.amount;
+            document.getElementById('dueDate').value = invoice.dueDate;
+            document.getElementById('status').value = invoice.status;
+            document.getElementById('description').value = invoice.description;
+            
+            editingIndex = index;
+            document.querySelector('button[type="submit"]').textContent = '請求書を更新';
+            
+            // フォームまでスクロール
+            document.querySelector('.controls').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 請求書の削除
+        function deleteInvoice(index) {
+            if (confirm('この請求書を削除しますか？')) {
+                invoices.splice(index, 1);
+                saveData();
+                updateDisplay();
+            }
+        }
+        
+        // 表示の更新
+        function updateDisplay() {
+            updateStats();
+            updateInvoiceList();
+            updateChartData();
+        }
+        
+        // 統計情報の更新
+        function updateStats() {
+            const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+            const paidAmount = invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0);
+            const pendingCount = invoices.filter(inv => inv.status === 'pending').length;
+            const overdueCount = invoices.filter(inv => inv.status === 'overdue').length;
+            
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">¥${totalAmount.toLocaleString()}</div>
+                    <div class="stat-label">総請求額</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">¥${paidAmount.toLocaleString()}</div>
+                    <div class="stat-label">回収済み</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${pendingCount}</div>
+                    <div class="stat-label">未払い件数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${overdueCount}</div>
+                    <div class="stat-label">期限切れ件数</div>
+                </div>
+            `;
+        }
+        
+        // 請求書リストの更新
+        function updateInvoiceList() {
+            const listContainer = document.getElementById('invoiceList');
+            
+            if (invoices.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #666;">請求書がありません</p>';
+                return;
+            }
+            
+            listContainer.innerHTML = invoices.map((invoice, index) => `
+                <div class="invoice-item">
+                    <div class="invoice-info">
+                        <div class="invoice-company">${invoice.company}</div>
+                        <div class="invoice-details">
+                            請求書番号: ${invoice.invoiceNumber} | 
+                            支払期限: ${new Date(invoice.dueDate).toLocaleDateString('ja-JP')}
+                            ${invoice.description ? ' | ' + invoice.description : ''}
+                        </div>
+                    </div>
+                    <div class="invoice-amount">¥${invoice.amount.toLocaleString()}</div>
+                    <div class="status status-${invoice.status}">
+                        ${getStatusText(invoice.status)}
+                    </div>
+                    <div class="invoice-actions">
+                        <button class="btn-small btn-edit" onclick="editInvoice(${index})">編集</button>
+                        <button class="btn-small btn-delete" onclick="deleteInvoice(${index})">削除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ステータステキストの取得
+        function getStatusText(status) {
+            const statusTexts = {
+                pending: '未払い',
+                paid: '支払済み',
+                overdue: '期限切れ'
+            };
+            return statusTexts[status] || status;
+        }
+        
+        // チャートデータの更新
+        function updateChartData() {
+            const statusCounts = {
+                pending: invoices.filter(inv => inv.status === 'pending').length,
+                paid: invoices.filter(inv => inv.status === 'paid').length,
+                overdue: invoices.filter(inv => inv.status === 'overdue').length
+            };
+            
+            chartData = [
+                { label: '未払い', value: statusCounts.pending, color: '#f57c00' },
+                { label: '支払済み', value: statusCounts.paid, color: '#2e7d32' },
+                { label: '期限切れ', value: statusCounts.overdue, color: '#d32f2f' }
+            ];
+        }
+        
+        // データの保存
+        function saveData() {
+            const data = JSON.stringify(invoices);
+            localStorage.setItem('invoiceData', data);
+        }
+        
+        // データの読み込み
+        function loadData() {
+            const data = localStorage.getItem('invoiceData');
+            if (data) {
+                invoices = JSON.parse(data);
+            }
+        }
+        
+        // データのエクスポート
+        function exportData() {
+            const dataStr = JSON.stringify(invoices, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'invoice_data_' + new Date().toISOString().split('T')[0] + '.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // p5.js スケッチ
+        function setup() {
+            canvas = createCanvas(800, 400);
+            canvas.parent('p5-container');
+            textAlign(CENTER, CENTER);
+            textFont('Arial');
+        }
+        
+        function draw() {
+            background(240, 248, 255);
+            
+            if (chartData.length === 0 || chartData.every(d => d.value === 0)) {
+                fill(100);
+                textSize(24);
+                text('データがありません', width/2, height/2);
+                return;
+            }
+            
+            // タイトル
+            fill(50);
+            textSize(20);
+            text('請求書ステータス分布', width/2, 30);
+            
+            // 円グラフの描画
+            const centerX = width/3;
+            const centerY = height/2 + 20;
+            const radius = 100;
+            
+            const total = chartData.reduce((sum, d) => sum + d.value, 0);
+            let currentAngle = -PI/2;
+            
+            // 円グラフ
+            for (let i = 0; i < chartData.length; i++) {
+                const data = chartData[i];
+                if (data.value > 0) {
+                    const sliceAngle = (data.value / total) * TWO_PI;
+                    
+                    fill(data.color);
+                    arc(centerX, centerY, radius * 2, radius * 2, currentAngle, currentAngle + sliceAngle);
+                    
+                    currentAngle += sliceAngle;
+                }
+            }
+            
+            // 凡例
+            const legendX = width * 2/3;
+            const legendY = centerY - 60;
+            
+            for (let i = 0; i < chartData.length; i++) {
+                const data = chartData[i];
+                const y = legendY + i * 40;
+                
+                // 色のボックス
+                fill(data.color);
+                rect(legendX - 100, y - 10, 20, 20);
+                
+                // ラベルと値
+                fill(50);
+                textAlign(LEFT, CENTER);
+                textSize(16);
+                text(`${data.label}: ${data.value}件`, legendX - 70, y);
+            }
+            
+            // 棒グラフ（月別推移）
+            drawMonthlyChart();
+        }
+        
+        function drawMonthlyChart() {
+            if (invoices.length === 0) return;
+            
+            const chartX = 50;
+            const chartY = height - 150;
+            const chartWidth = width - 100;
+            const chartHeight = 100;
+            
+            fill(50);
+            textAlign(LEFT, CENTER);
+            textSize(16);
+            text('月別請求額推移', chartX, chartY - 20);
+            
+            // 月別データの集計
+            const monthlyData = {};
+            invoices.forEach(invoice => {
+                const date = new Date(invoice.createdAt);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = 0;
+                }
+                monthlyData[monthKey] += invoice.amount;
+            });
+            
+            const months = Object.keys(monthlyData).sort();
+            if (months.length === 0) return;
+            
+            const maxAmount = Math.max(...Object.values(monthlyData));
+            const barWidth = chartWidth / months.length;
+            
+            // 棒グラフの描画
+            for (let i = 0; i < months.length; i++) {
+                const amount = monthlyData[months[i]];
+                const barHeight = (amount / maxAmount) * chartHeight;
+                const x = chartX + i * barWidth;
+                const y = chartY + chartHeight - barHeight;
+                
+                fill(102, 126, 234, 150);
+                rect(x + 5, y, barWidth - 10, barHeight);
+                
+                // 月のラベル
+                fill(50);
+                textAlign(CENTER, CENTER);
+                textSize(10);
+                text(months[i], x + barWidth/2, chartY + chartHeight + 15);
+                
+                // 金額
+                if (barHeight > 20) {
+                    fill(255);
+                    textSize(10);
+                    text('¥' + (amount/1000).toFixed(0) + 'K', x + barWidth/2, y + barHeight/2);
+                }
+            }
+        }
+        
+        function windowResized() {
+            resizeCanvas(min(windowWidth - 40, 800), 400);
+        }
+    </script>
+</body>
+</html>
